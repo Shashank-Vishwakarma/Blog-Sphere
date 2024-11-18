@@ -1,11 +1,17 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 export default function LoginPage() {
+    const router = useRouter();
+    const { status } = useSession();
+    if (status === "authenticated") {
+        router.replace("/");
+    }
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-4 bg-white rounded shadow-md">

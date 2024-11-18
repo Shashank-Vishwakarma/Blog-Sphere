@@ -4,9 +4,11 @@ import {
     text,
     primaryKey,
     integer,
+    boolean,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 import crypto from "crypto";
+import { relations, sql } from "drizzle-orm";
 
 export const users = pgTable("user", {
     id: text("id")
@@ -63,3 +65,122 @@ export const verificationTokens = pgTable(
         }),
     })
 );
+
+export const stories = pgTable("story", {
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    content: text("content").notNull(),
+    topics: text("topics")
+        .array()
+        .default(sql`'{}'::text[]`),
+    userId: text("userId")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    publish: boolean("publish").default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const comments = pgTable("comment", {
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    content: text("content").notNull(),
+    userId: text("userId")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    storyId: text("storyId")
+        .notNull()
+        .references(() => stories.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const likes = pgTable("like", {
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    storyId: text("storyId")
+        .notNull()
+        .references(() => stories.id, { onDelete: "cascade" }),
+});
+
+export const savedStories = pgTable("savedStory", {
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    storyId: text("storyId")
+        .notNull()
+        .references(() => stories.id, { onDelete: "cascade" }),
+});
+
+export const userRelations = relations(users, ({ many }) => ({
+    stories: many(stories),
+    comments: many(comments),
+    likes: many(likes),
+    savedStories: many(savedStories),
+}));
+
+export const storyRelations = relations(stories, ({ one, many }) => ({
+    author: one(users, {
+        fields: [stories.userId],
+        references: [users.id],
+    }),
+    comments: many(comments),
+    likes: many(likes),
+    savedStories: many(savedStories),
+}));
+
+export const commentRelations = relations(comments, ({ one, many }) => ({
+    author: one(users, {
+        fields: [comments.userId],
+        references: [users.id],
+    }),
+    story: one(stories, {
+        fields: [comments.storyId],
+        references: [stories.id],
+    }),
+}));
+
+export const likeRelations = relations(likes, ({ one, many }) => ({
+    author: one(users, {
+        fields: [likes.userId],
+        references: [users.id],
+    }),
+    story: one(stories, {
+        fields: [likes.storyId],
+        references: [stories.id],
+    }),
+}));
+
+export const savedStoriesRelations = relations(
+    savedStories,
+    ({ one, many }) => ({
+        author: one(users, {
+            fields: [savedStories.userId],
+            references: [users.id],
+        }),
+        story: one(stories, {
+            fields: [savedStories.storyId],
+            references: [stories.id],
+        }),
+    })
+);
+
+export const topics = pgTable("topic", {
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    topics: text("topics")
+        .array()
+        .default(sql`'{}'::text[]`),
+    userId: text("userId")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
