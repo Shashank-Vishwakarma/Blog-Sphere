@@ -7,3 +7,5 @@
 3. NeonDB (for serverless postgres database)
 4. Drizzle ORM
 5. Next Auth
+6. Shadcn UI
+7. Tailwind CSS
